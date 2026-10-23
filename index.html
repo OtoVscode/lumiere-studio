@@ -103,7 +103,8 @@
     #site-header {
       transition: background-color 400ms ease, border-color 400ms ease;
     }
-    #site-header.is-solid {
+    #site-header.is-solid,
+    #site-header.menu-open {
       background-color: rgba(21, 17, 15, 0.62);
       -webkit-backdrop-filter: blur(16px);
       backdrop-filter: blur(16px);
@@ -225,6 +226,65 @@
       .h-watermark {
         bottom: -3.4vw;
         font-size: 24vw;
+      }
+    }
+
+    /* Pantallas bajas (móvil en horizontal, ventanas poco altas): titular arriba a la izquierda,
+       texto abajo a la derecha y tamaños ligados a la altura para que nada se monte */
+    @media (max-height: 560px) and (orientation: landscape) {
+      .h-headline {
+        top: calc(var(--nav-h) + 3vh);
+        bottom: auto;
+        left: 6%;
+        right: auto;
+      }
+      .h-headline .hero-word {
+        font-size: 9vh;
+      }
+      .h-headline .hero-word.font-serif {
+        font-size: 19vh;
+      }
+      .h-copy {
+        left: auto;
+        right: 6%;
+        bottom: 6vh;
+        width: min(340px, 44%);
+      }
+      .h-copy p {
+        font-size: 13px;
+      }
+      .h-copy > div {
+        margin-top: 0.875rem;
+      }
+      .h-label,
+      .hero-line.h {
+        display: none;
+      }
+      .h-polaroid {
+        top: auto;
+        right: auto;
+        left: 6%;
+        bottom: 6vh;
+        width: 20vh;
+      }
+      #hero-polaroid {
+        padding: 4px 4px 0;
+      }
+      .h-polaroid figcaption {
+        font-size: 2.6vh;
+        padding: 3px 0;
+      }
+      .h-watermark {
+        font-size: min(24vw, 48vh);
+      }
+    }
+    @media (max-height: 560px) and (orientation: landscape) and (min-width: 768px) {
+      .h-headline,
+      .h-polaroid {
+        left: 2.2vw;
+      }
+      .h-copy {
+        right: 2.2vw;
       }
     }
 
@@ -372,7 +432,7 @@
   </header>
 
   <!-- ===================== MENÚ MÓVIL ===================== -->
-  <div id="mobile-menu" class="fixed inset-0 z-40 flex flex-col justify-between bg-ink/95 px-[6%] pb-10 pt-32 backdrop-blur-xl lg:hidden" role="dialog" aria-modal="true" aria-label="Menú de navegación">
+  <div id="mobile-menu" class="fixed inset-0 z-40 flex flex-col justify-between gap-10 overflow-y-auto bg-ink/95 px-[6%] pb-10 pt-32 backdrop-blur-xl lg:hidden" role="dialog" aria-modal="true" aria-label="Menú de navegación">
     <ul class="flex flex-col">
       <li class="overflow-hidden border-b border-white/10"><a href="#obras" class="menu-link flex items-baseline justify-between py-4"><span class="font-serif text-5xl italic">Obras</span><span class="text-[11px] tracking-[0.2em] text-bone/40">01</span></a></li>
       <li class="overflow-hidden border-b border-white/10"><a href="#enfoque" class="menu-link flex items-baseline justify-between py-4"><span class="font-serif text-5xl italic">Enfoque</span><span class="text-[11px] tracking-[0.2em] text-bone/40">02</span></a></li>
@@ -930,6 +990,7 @@
         burgerTop.style.transform = open ? 'translateY(4px) rotate(45deg)' : '';
         burgerBottom.style.transform = open ? 'translateY(-4px) rotate(-45deg)' : '';
         document.body.style.overflow = open ? 'hidden' : '';
+        header.classList.toggle('menu-open', open);
 
         if (open) {
           menu.style.visibility = 'visible';
