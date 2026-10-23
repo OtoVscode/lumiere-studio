@@ -1,0 +1,1334 @@
+<!DOCTYPE html>
+<html lang="es" class="no-js">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <title>Lumière Studio — Fotografía editorial y de autor</title>
+  <meta name="description" content="Lumière Studio: fotografía editorial y de autor. Retrato, moda, arquitectura y dirección creativa con luz natural." />
+  <meta name="theme-color" content="#15110f" />
+
+  <!-- Fuentes -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500&family=Playfair+Display:ital,wght@0,400;1,400;1,500&family=Caveat:wght@500&display=swap" rel="stylesheet" />
+
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            ink: '#15110f',
+            bone: '#f5efe8',
+            peach: '#f2b49c',
+          },
+          fontFamily: {
+            sans: ['Geist', 'system-ui', 'sans-serif'],
+            serif: ['"Playfair Display"', 'Georgia', 'serif'],
+            hand: ['Caveat', 'cursive'],
+          },
+        },
+      },
+    };
+  </script>
+
+  <!-- Motion (vanilla) -->
+  <script src="https://cdn.jsdelivr.net/npm/motion@11.11.13/dist/motion.js"></script>
+
+  <style>
+    :root {
+      --ink: #15110f;
+      --bone: #f5efe8;
+      --peach: #f2b49c;
+      --line-hero: rgba(255, 255, 255, 0.24);
+      --line: rgba(245, 239, 232, 0.09);
+      --glass: rgba(245, 239, 232, 0.12);
+      /* Retícula editorial compartida por todas las secciones */
+      --c1: 17.37%;
+      --c2: 73.04%;
+      --r1: 52.8%;
+      --nav-h: 76px;
+      --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+    }
+
+    html, body {
+      background-color: var(--ink);
+      color: var(--bone);
+    }
+
+    body {
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    ::selection {
+      background: var(--peach);
+      color: var(--ink);
+    }
+
+    /* Grano fotográfico fijo (no repinta al hacer scroll) */
+    .grain {
+      position: fixed;
+      inset: 0;
+      z-index: 80;
+      pointer-events: none;
+      opacity: 0.07;
+      background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>");
+    }
+
+    /* Estado previo a la entrada: solo si JS + Motion están activos */
+    .js [data-enter] {
+      opacity: 0;
+    }
+
+    /* ---------- Vidrio ---------- */
+    .glass {
+      background: var(--glass);
+      border: 1px solid rgba(255, 255, 255, 0.18);
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.22), 0 10px 30px -12px rgba(21, 17, 15, 0.45);
+      -webkit-backdrop-filter: blur(14px) saturate(140%);
+      backdrop-filter: blur(14px) saturate(140%);
+    }
+
+    .press {
+      transition: transform 160ms var(--ease-out);
+    }
+    .press:active {
+      transform: scale(0.97);
+    }
+
+    /* ---------- Header ---------- */
+    #site-header {
+      transition: background-color 400ms ease, border-color 400ms ease;
+    }
+    #site-header.is-solid {
+      background-color: rgba(21, 17, 15, 0.62);
+      -webkit-backdrop-filter: blur(16px);
+      backdrop-filter: blur(16px);
+    }
+    .nav-link {
+      position: relative;
+    }
+    .nav-link::after {
+      content: '';
+      position: absolute;
+      left: 0;
+      right: 0;
+      bottom: -6px;
+      height: 1px;
+      background: currentColor;
+      transform: scaleX(0);
+      transform-origin: right;
+      transition: transform 500ms var(--ease-out);
+    }
+    @media (hover: hover) and (pointer: fine) {
+      .nav-link:hover::after {
+        transform: scaleX(1);
+        transform-origin: left;
+      }
+    }
+
+    /* ---------- Hero ---------- */
+    .hero-line {
+      position: absolute;
+      background: var(--line-hero);
+      pointer-events: none;
+    }
+    .hero-line.v {
+      top: 0;
+      bottom: 0;
+      width: 1px;
+      transform-origin: top;
+    }
+    .hero-line.h {
+      left: 0;
+      right: 0;
+      height: 1px;
+      transform-origin: left;
+    }
+    /* Foto y video comparten caja y encuadre: anclados arriba, a sangre */
+    .hero-media {
+      object-position: 55% 0%;
+    }
+    @media (min-width: 768px) {
+      .hero-media {
+        object-position: 0% 0%;
+      }
+    }
+
+    .h-headline {
+      position: absolute;
+      left: 6%;
+      right: 6%;
+      bottom: calc(env(safe-area-inset-bottom) + 220px);
+    }
+    .h-season {
+      position: absolute;
+      right: 6%;
+      top: calc(var(--nav-h) + 22px);
+    }
+    .h-copy {
+      position: absolute;
+      left: 6%;
+      right: 6%;
+      bottom: calc(env(safe-area-inset-bottom) + 28px);
+    }
+    .h-label {
+      display: none;
+    }
+    .h-polaroid {
+      position: absolute;
+      right: 6%;
+      top: 21%;
+      width: 100px;
+    }
+    .h-watermark {
+      position: absolute;
+      left: 0;
+      right: 0;
+      bottom: -4.5vw;
+      font-size: 31vw;
+      line-height: 0.8;
+    }
+
+    @media (min-width: 768px) {
+      .h-headline {
+        left: 2.2vw;
+        right: auto;
+        bottom: calc(100% - var(--r1) + 2.4vw);
+      }
+      .h-season {
+        right: auto;
+        left: calc(var(--c2) + 2.2vw);
+        top: calc(var(--nav-h) + 2.2vw);
+      }
+      .h-copy {
+        left: calc(var(--c2) + 2.2vw);
+        right: 2.2vw;
+        bottom: 2.6vw;
+      }
+      .h-label {
+        display: block;
+        position: absolute;
+        left: 2.2vw;
+        bottom: 2.6vw;
+      }
+      .h-polaroid {
+        right: auto;
+        top: auto;
+        left: calc(var(--c1) - 5.6vw);
+        bottom: calc(2.6vw + 96px);
+        width: clamp(130px, 11.5vw, 190px);
+      }
+      .h-watermark {
+        bottom: -3.4vw;
+        font-size: 24vw;
+      }
+    }
+
+    /* ---------- Secciones con retícula ---------- */
+    .ruled {
+      position: relative;
+    }
+    @media (min-width: 768px) {
+      .ruled::before,
+      .ruled::after {
+        content: '';
+        position: absolute;
+        top: 0;
+        bottom: 0;
+        width: 1px;
+        background: var(--line);
+        pointer-events: none;
+      }
+      .ruled::before { left: var(--c1); }
+      .ruled::after { left: var(--c2); }
+      .frame-cols {
+        display: grid;
+        grid-template-columns: var(--c1) calc(var(--c2) - var(--c1)) 1fr;
+      }
+    }
+
+    /* Marquesina */
+    .marquee-track {
+      animation: marquee 38s linear infinite;
+    }
+    @keyframes marquee {
+      from { transform: translateX(0); }
+      to { transform: translateX(-50%); }
+    }
+
+    /* Filtros: la copia activa se recorta sobre el botón seleccionado */
+    #filter-active {
+      clip-path: inset(0 100% 0 0 round 999px);
+    }
+
+    /* Obras */
+    .work-media img {
+      transition: transform 900ms var(--ease-out);
+    }
+    .work-arrow {
+      transition: transform 400ms var(--ease-out), opacity 300ms ease;
+    }
+    @media (hover: hover) and (pointer: fine) {
+      .work:hover .work-media img { transform: scale(1.045); }
+      .work-arrow { opacity: 0; transform: translate(-6px, 6px); }
+      .work:hover .work-arrow { opacity: 1; transform: translate(0, 0); }
+    }
+
+    /* Sesiones */
+    .service-fill {
+      transform: scaleX(0);
+      transform-origin: left;
+      transition: transform 700ms var(--ease-out);
+    }
+    .service-name {
+      transition: transform 600ms var(--ease-out);
+    }
+    .service-num {
+      transition: opacity 250ms ease;
+    }
+    /* Mientras la tarjeta ocupa la columna izquierda, los números se apartan */
+    .services-active .service-num {
+      opacity: 0;
+    }
+    .service-arrow {
+      transition: transform 400ms var(--ease-out), background-color 300ms ease, color 300ms ease, border-color 300ms ease;
+    }
+    @media (hover: hover) and (pointer: fine) {
+      .service-row:hover .service-fill { transform: scaleX(1); }
+      .service-row:hover .service-name { transform: translateX(1rem); }
+      .service-row:hover .service-arrow {
+        background-color: var(--bone);
+        border-color: var(--bone);
+        color: var(--ink);
+        transform: rotate(45deg);
+      }
+    }
+
+    /* Menú móvil y lightbox */
+    #mobile-menu {
+      visibility: hidden;
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .hero-video {
+        display: none;
+      }
+      .marquee-track {
+        animation: none;
+      }
+    }
+  </style>
+</head>
+
+<body class="bg-ink font-sans font-light text-bone overflow-x-hidden">
+  <script>document.documentElement.classList.replace('no-js', 'js');</script>
+  <div class="grain" aria-hidden="true"></div>
+
+  <!-- ===================== HEADER ===================== -->
+  <header id="site-header" class="fixed inset-x-0 top-0 z-50 border-b border-white/20">
+    <nav class="flex h-[76px] items-center justify-between px-[6%] md:px-[2.2vw]" aria-label="Navegación principal">
+      <a href="#inicio" data-enter class="font-serif text-[28px] italic leading-none tracking-[-0.01em] md:text-[32px]" aria-label="Lumière Studio, inicio">Lumière</a>
+
+      <div class="flex items-center gap-3 md:gap-8">
+        <ul class="hidden items-center lg:flex">
+          <li data-enter class="border-r border-white/25 px-6"><a href="#obras" class="nav-link text-[11px] font-medium uppercase tracking-[0.22em]">Obras</a></li>
+          <li data-enter class="border-r border-white/25 px-6"><a href="#enfoque" class="nav-link text-[11px] font-medium uppercase tracking-[0.22em]">Enfoque</a></li>
+          <li data-enter class="border-r border-white/25 px-6"><a href="#sesiones" class="nav-link text-[11px] font-medium uppercase tracking-[0.22em]">Sesiones</a></li>
+          <li data-enter class="px-6"><a href="#contacto" class="nav-link text-[11px] font-medium uppercase tracking-[0.22em]">Contacto</a></li>
+        </ul>
+
+        <a href="#contacto" data-enter class="glass press hidden h-11 w-11 items-center justify-center rounded-full md:flex" aria-label="Agendar fecha">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <rect x="3.5" y="5" width="17" height="15.5" rx="2" />
+            <path d="M3.5 10h17M8 3v4M16 3v4" />
+          </svg>
+        </a>
+        <a href="#obras" data-enter class="glass press hidden h-11 w-11 items-center justify-center rounded-full md:flex" aria-label="Ver archivo de obras">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <circle cx="12" cy="12" r="8.5" />
+            <path d="M12 3.5l3.2 5.6M20.3 10.4l-6.5.1M17.6 18.5l-3.3-5.5M6.4 18.6l3.2-5.6M3.7 13.6l6.5-.1M6.4 5.5l3.3 5.5" />
+          </svg>
+        </a>
+        <button
+          id="menu-toggle"
+          type="button"
+          data-enter
+          class="glass press flex h-11 w-11 items-center justify-center rounded-full lg:hidden"
+          aria-controls="mobile-menu"
+          aria-expanded="false"
+          aria-label="Abrir menú"
+        >
+          <span class="relative block h-[9px] w-[18px]" aria-hidden="true">
+            <span id="burger-top" class="absolute left-0 top-0 block h-px w-full bg-current transition-transform duration-300 ease-[cubic-bezier(0.23,1,0.32,1)]"></span>
+            <span id="burger-bottom" class="absolute bottom-0 left-0 block h-px w-full bg-current transition-transform duration-300 ease-[cubic-bezier(0.23,1,0.32,1)]"></span>
+          </span>
+        </button>
+      </div>
+    </nav>
+  </header>
+
+  <!-- ===================== MENÚ MÓVIL ===================== -->
+  <div id="mobile-menu" class="fixed inset-0 z-40 flex flex-col justify-between bg-ink/95 px-[6%] pb-10 pt-32 backdrop-blur-xl lg:hidden" role="dialog" aria-modal="true" aria-label="Menú de navegación">
+    <ul class="flex flex-col">
+      <li class="overflow-hidden border-b border-white/10"><a href="#obras" class="menu-link flex items-baseline justify-between py-4"><span class="font-serif text-5xl italic">Obras</span><span class="text-[11px] tracking-[0.2em] text-bone/40">01</span></a></li>
+      <li class="overflow-hidden border-b border-white/10"><a href="#enfoque" class="menu-link flex items-baseline justify-between py-4"><span class="font-serif text-5xl italic">Enfoque</span><span class="text-[11px] tracking-[0.2em] text-bone/40">02</span></a></li>
+      <li class="overflow-hidden border-b border-white/10"><a href="#sesiones" class="menu-link flex items-baseline justify-between py-4"><span class="font-serif text-5xl italic">Sesiones</span><span class="text-[11px] tracking-[0.2em] text-bone/40">03</span></a></li>
+      <li class="overflow-hidden border-b border-white/10"><a href="#contacto" class="menu-link flex items-baseline justify-between py-4"><span class="font-serif text-5xl italic">Contacto</span><span class="text-[11px] tracking-[0.2em] text-bone/40">04</span></a></li>
+    </ul>
+    <div class="menu-foot flex flex-col gap-6">
+      <a href="#contacto" class="menu-link press inline-flex items-center justify-center rounded-full bg-bone px-6 py-4 text-[12px] font-medium uppercase tracking-[0.2em] text-ink">Agendar fecha</a>
+      <p class="flex justify-between text-[11px] uppercase tracking-[0.2em] text-bone/45"><span>Madrid — CDMX</span><span>Est. 2014</span></p>
+    </div>
+  </div>
+
+  <main>
+    <!-- ===================== HERO ===================== -->
+    <section id="inicio" class="relative min-h-[100dvh] w-full overflow-hidden bg-[#3b2f5c]" aria-label="Presentación">
+      <!-- Fotografía -->
+      <div class="absolute inset-0 overflow-hidden">
+        <div id="hero-photo" class="absolute inset-0 isolate">
+          <img
+            src="https://d2ol7oe51mr4n9.cloudfront.net/user_38xzZboKViGWJOttwIXH07lWA1P/8c8bd1ea-b9f8-4755-b2db-ca972fa9a381.jpg"
+            alt="Retrato en contrapicado de una mujer rubia de pelo largo y ondulado con un jersey lila de punto grueso, frente a un cielo lila con nubes melocotón al atardecer"
+            class="hero-media absolute inset-0 h-full w-full object-cover"
+            fetchpriority="high"
+          />
+          <!-- Dos copias del mismo clip: una funde sobre la otra para que el bucle no salte -->
+          <video class="hero-video hero-media absolute inset-0 h-full w-full object-cover opacity-0" muted playsinline preload="none" aria-hidden="true" data-src="https://d2ol7oe51mr4n9.cloudfront.net/user_38xzZboKViGWJOttwIXH07lWA1P/0b9dbcc0-b9fc-4c2c-9418-458e4e829c59.mp4"></video>
+          <video class="hero-video hero-media absolute inset-0 h-full w-full object-cover opacity-0" muted playsinline preload="none" aria-hidden="true" data-src="https://d2ol7oe51mr4n9.cloudfront.net/user_38xzZboKViGWJOttwIXH07lWA1P/0b9dbcc0-b9fc-4c2c-9418-458e4e829c59.mp4"></video>
+        </div>
+        <!-- Viraje para legibilidad y fundido al color de página -->
+        <div class="absolute inset-0 bg-[linear-gradient(90deg,rgba(40,22,28,0.5)_0%,rgba(40,22,28,0.12)_38%,rgba(40,22,28,0.06)_62%,rgba(40,22,28,0.42)_100%)]" aria-hidden="true"></div>
+        <div class="absolute inset-x-0 bottom-0 h-[45%] bg-gradient-to-t from-ink via-ink/40 to-transparent md:h-[28%]" aria-hidden="true"></div>
+      </div>
+
+      <!-- Retícula -->
+      <span class="hero-line v hidden md:block" style="left: var(--c1)" data-line="v" aria-hidden="true"></span>
+      <span class="hero-line v hidden md:block" style="left: var(--c2)" data-line="v" aria-hidden="true"></span>
+      <span class="hero-line h hidden md:block" style="top: var(--r1)" data-line="h" aria-hidden="true"></span>
+      <span class="hero-line v md:hidden" style="left: 6%" data-line="v" aria-hidden="true"></span>
+      <span class="hero-line v md:hidden" style="left: 94%" data-line="v" aria-hidden="true"></span>
+
+      <!-- Marca de agua -->
+      <p class="h-watermark select-none text-center font-serif italic text-white/[0.16]" data-enter aria-hidden="true">Lumière</p>
+
+      <!-- Titular -->
+      <h1 class="h-headline">
+        <span class="block overflow-hidden pb-[0.06em]"><span class="hero-word block text-[2.6rem] font-light leading-[1.02] tracking-[-0.035em] sm:text-6xl md:text-[clamp(2.6rem,5.1vw,6.4rem)]">La estética</span></span>
+        <span class="block overflow-hidden pb-[0.06em]"><span class="hero-word block text-[2.6rem] font-light leading-[1.02] tracking-[-0.035em] sm:text-6xl md:text-[clamp(2.6rem,5.1vw,6.4rem)]">de lo</span></span>
+        <span class="block overflow-hidden pb-[0.12em]"><span class="hero-word block font-serif text-[5.4rem] italic leading-[0.86] tracking-[-0.02em] sm:text-[7rem] md:text-[clamp(5rem,11vw,13.5rem)]">efímero</span></span>
+      </h1>
+
+      <!-- Temporada -->
+      <div class="h-season flex items-center gap-3" data-enter>
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="#f2b49c" aria-hidden="true">
+          <path d="M12 0c.6 6.4 5.6 11.4 12 12-6.4.6-11.4 5.6-12 12-.6-6.4-5.6-11.4-12-12C6.4 11.4 11.4 6.4 12 0z" />
+        </svg>
+        <span class="text-[11px] font-medium uppercase tracking-[0.26em]">Otoño 2026</span>
+      </div>
+
+      <!-- Texto y acciones -->
+      <div class="h-copy" data-enter>
+        <p class="max-w-[34ch] text-[15px] font-light leading-relaxed text-white/90 md:max-w-[30ch] md:text-[clamp(14px,1.08vw,17px)]">
+          Retratos, moda y espacios fotografiados con luz natural. Imágenes pensadas para durar más que el momento que las provocó.
+        </p>
+        <div class="mt-6 flex items-center gap-3">
+          <a href="#obras" class="press inline-flex h-12 items-center rounded-full bg-white px-7 text-[12px] font-medium uppercase tracking-[0.16em] text-ink">Ver archivo</a>
+          <a href="#contacto" class="glass press flex h-12 w-12 items-center justify-center rounded-full" aria-label="Agendar fecha">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 17L17 7" /><path d="M8 7h9v9" /></svg>
+          </a>
+        </div>
+      </div>
+
+      <!-- Etiqueta inferior izquierda -->
+      <p class="h-label text-[11px] font-medium uppercase leading-[1.9] tracking-[0.26em]" data-enter>
+        Fotografía<br />Editorial<br />De autor
+      </p>
+
+      <!-- Polaroid -->
+      <figure id="hero-polaroid" class="h-polaroid bg-[#fbf8f3] p-2 pb-0 shadow-[0_24px_50px_-18px_rgba(40,20,26,0.65)] md:p-2.5 md:pb-0" style="transform: rotate(-13deg)" data-enter>
+        <img
+          src="https://d2ol7oe51mr4n9.cloudfront.net/user_38xzZboKViGWJOttwIXH07lWA1P/4612f265-40f3-4fc9-af4c-b03c289c2b75.jpg"
+          alt="Mujer rubia con gafas de sol, camiseta lila y vaqueros claros sentada en unas escaleras de piedra frente a un edificio antiguo"
+          class="aspect-[4/5] w-full object-cover"
+        />
+        <figcaption class="whitespace-nowrap py-1.5 text-center font-hand text-[15px] leading-none text-[#3a2c2a] md:py-2 md:text-[clamp(18px,1.6vw,26px)]">Lisboa, 6:41 p.m.</figcaption>
+      </figure>
+    </section>
+
+    <!-- ===================== OBRAS ===================== -->
+    <section id="obras" class="ruled border-t border-white/10" aria-labelledby="obras-title">
+      <div class="frame-cols border-b border-white/10">
+        <div class="px-[6%] pt-20 md:px-[2.2vw] md:pt-28">
+          <p class="reveal text-[11px] font-medium uppercase tracking-[0.26em] text-bone/50"><span class="font-serif text-2xl normal-case italic tracking-normal text-peach">01</span>&nbsp;&nbsp;Archivo visual</p>
+        </div>
+        <div class="px-[6%] pt-6 md:px-[2.2vw] md:pb-20 md:pt-28">
+          <h2 id="obras-title" class="reveal text-[3.2rem] font-light leading-[0.95] tracking-[-0.04em] md:text-[clamp(3.5rem,6.6vw,8rem)]">
+            Obras <span class="font-serif italic tracking-[-0.02em]">selectas</span>
+          </h2>
+        </div>
+        <div class="flex flex-col justify-end gap-5 px-[6%] pb-14 pt-8 md:px-[2.2vw] md:pb-20 md:pt-28">
+          <p class="reveal max-w-[34ch] text-sm leading-relaxed text-bone/55">Encargos y proyectos personales, 2023 — 2026. Toca una pieza para verla completa.</p>
+          <p class="text-[11px] uppercase tracking-[0.22em] text-bone/40" aria-live="polite"><span id="works-count">06</span> piezas</p>
+        </div>
+      </div>
+
+      <!-- Filtros segmentados -->
+      <div class="frame-cols border-b border-white/10">
+        <div class="hidden md:block"></div>
+        <div class="px-[6%] py-5 md:px-[2.2vw]">
+          <div class="reveal -mx-[6%] overflow-x-auto px-[6%] md:mx-0 md:px-0" role="group" aria-label="Filtrar obras por categoría">
+            <div id="filters" class="relative inline-flex rounded-full border border-white/15 p-1">
+              <div class="flex" id="filter-base">
+                <button type="button" class="filter-btn whitespace-nowrap rounded-full px-3.5 py-2 text-[10px] font-medium uppercase tracking-[0.18em] text-bone/60 transition-colors duration-200 hover:text-bone md:px-4" data-filter="all" aria-pressed="true">Todos</button>
+                <button type="button" class="filter-btn whitespace-nowrap rounded-full px-3.5 py-2 text-[10px] font-medium uppercase tracking-[0.18em] text-bone/60 transition-colors duration-200 hover:text-bone md:px-4" data-filter="editorial" aria-pressed="false">Editorial</button>
+                <button type="button" class="filter-btn whitespace-nowrap rounded-full px-3.5 py-2 text-[10px] font-medium uppercase tracking-[0.18em] text-bone/60 transition-colors duration-200 hover:text-bone md:px-4" data-filter="retrato" aria-pressed="false">Retrato</button>
+                <button type="button" class="filter-btn whitespace-nowrap rounded-full px-3.5 py-2 text-[10px] font-medium uppercase tracking-[0.18em] text-bone/60 transition-colors duration-200 hover:text-bone md:px-4" data-filter="arquitectura" aria-pressed="false">Arquitectura</button>
+              </div>
+              <div id="filter-active" class="pointer-events-none absolute inset-1 flex rounded-full bg-bone" aria-hidden="true">
+                <span class="whitespace-nowrap rounded-full px-3.5 py-2 text-[10px] font-medium uppercase tracking-[0.18em] text-ink md:px-4">Todos</span>
+                <span class="whitespace-nowrap rounded-full px-3.5 py-2 text-[10px] font-medium uppercase tracking-[0.18em] text-ink md:px-4">Editorial</span>
+                <span class="whitespace-nowrap rounded-full px-3.5 py-2 text-[10px] font-medium uppercase tracking-[0.18em] text-ink md:px-4">Retrato</span>
+                <span class="whitespace-nowrap rounded-full px-3.5 py-2 text-[10px] font-medium uppercase tracking-[0.18em] text-ink md:px-4">Arquitectura</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Grilla asimétrica -->
+      <div id="works-grid" class="grid grid-cols-1 gap-x-[2.2vw] gap-y-16 px-[6%] py-16 md:grid-cols-12 md:gap-y-24 md:px-[2.2vw] md:py-28">
+
+        <article class="work md:col-span-7" data-category="editorial" data-title="Silencio en lino" data-label="Editorial" data-year="2025" data-specs="Leica M11 · 35mm f/1.4 · ISO 160" data-location="Lisboa, Portugal" data-aspect="4/5" data-full="https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?q=90&w=2000&auto=format&fit=crop">
+          <button type="button" class="work-open block w-full text-left" aria-label="Ver obra: Silencio en lino">
+            <span class="work-media relative block aspect-[4/5] overflow-hidden bg-white/5">
+              <img src="https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?q=80&w=1400&auto=format&fit=crop" alt="Modelo con vestido claro en un pasillo de luz suave" class="h-full w-full object-cover" loading="lazy" decoding="async" />
+            </span>
+            <span class="mt-5 grid grid-cols-[auto_1fr_auto] items-baseline gap-4 border-t border-white/10 pt-4">
+              <span class="text-[11px] tracking-[0.2em] text-bone/40">01</span>
+              <span class="font-serif text-2xl italic md:text-3xl">Silencio en lino</span>
+              <span class="flex items-center gap-3 text-[11px] uppercase tracking-[0.2em] text-bone/50">Editorial · 2025
+                <svg class="work-arrow" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 17L17 7" /><path d="M8 7h9v9" /></svg>
+              </span>
+            </span>
+          </button>
+        </article>
+
+        <article class="work md:col-span-5 md:mt-48" data-category="retrato" data-title="Mirada interior" data-label="Retrato" data-year="2024" data-specs="Hasselblad X2D · 90mm f/2.5 · ISO 100" data-location="Madrid, España" data-aspect="3/4" data-full="https://images.unsplash.com/photo-1531746020798-e6953c6e8e04?q=90&w=2000&auto=format&fit=crop">
+          <button type="button" class="work-open block w-full text-left" aria-label="Ver obra: Mirada interior">
+            <span class="work-media relative block aspect-[3/4] overflow-hidden bg-white/5">
+              <img src="https://images.unsplash.com/photo-1531746020798-e6953c6e8e04?q=80&w=1200&auto=format&fit=crop" alt="Retrato cercano de una mujer con mirada serena" class="h-full w-full object-cover" loading="lazy" decoding="async" />
+            </span>
+            <span class="mt-5 grid grid-cols-[auto_1fr_auto] items-baseline gap-4 border-t border-white/10 pt-4">
+              <span class="text-[11px] tracking-[0.2em] text-bone/40">02</span>
+              <span class="font-serif text-2xl italic md:text-3xl">Mirada interior</span>
+              <span class="flex items-center gap-3 text-[11px] uppercase tracking-[0.2em] text-bone/50">Retrato · 2024
+                <svg class="work-arrow" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 17L17 7" /><path d="M8 7h9v9" /></svg>
+              </span>
+            </span>
+          </button>
+        </article>
+
+        <article class="work md:col-span-4" data-category="arquitectura" data-title="Geometría blanca" data-label="Arquitectura" data-year="2024" data-specs="Fujifilm GFX 100S · 23mm f/4 · ISO 64" data-location="Valencia, España" data-aspect="3/4" data-full="https://images.unsplash.com/photo-1487958449943-2429e8be8625?q=90&w=2000&auto=format&fit=crop">
+          <button type="button" class="work-open block w-full text-left" aria-label="Ver obra: Geometría blanca">
+            <span class="work-media relative block aspect-[3/4] overflow-hidden bg-white/5">
+              <img src="https://images.unsplash.com/photo-1487958449943-2429e8be8625?q=80&w=1000&auto=format&fit=crop" alt="Fachada blanca de arquitectura contemporánea con curvas" class="h-full w-full object-cover" loading="lazy" decoding="async" />
+            </span>
+            <span class="mt-5 grid grid-cols-[auto_1fr_auto] items-baseline gap-4 border-t border-white/10 pt-4">
+              <span class="text-[11px] tracking-[0.2em] text-bone/40">03</span>
+              <span class="font-serif text-2xl italic md:text-3xl">Geometría blanca</span>
+              <span class="flex items-center gap-3 text-[11px] uppercase tracking-[0.2em] text-bone/50">Arq. · 2024
+                <svg class="work-arrow" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 17L17 7" /><path d="M8 7h9v9" /></svg>
+              </span>
+            </span>
+          </button>
+        </article>
+
+        <article class="work md:col-span-8 md:mt-32" data-category="editorial" data-title="Archivo de verano" data-label="Editorial" data-year="2025" data-specs="Leica SL3 · 50mm f/1.2 · ISO 200" data-location="Ciudad de México, México" data-aspect="16/11" data-full="https://images.unsplash.com/photo-1509631179647-0177331693ae?q=90&w=2400&auto=format&fit=crop">
+          <button type="button" class="work-open block w-full text-left" aria-label="Ver obra: Archivo de verano">
+            <span class="work-media relative block aspect-[16/11] overflow-hidden bg-white/5">
+              <img src="https://images.unsplash.com/photo-1509631179647-0177331693ae?q=80&w=1800&auto=format&fit=crop" alt="Escena editorial de moda con modelo y vestuario en tonos cálidos" class="h-full w-full object-cover" loading="lazy" decoding="async" />
+            </span>
+            <span class="mt-5 grid grid-cols-[auto_1fr_auto] items-baseline gap-4 border-t border-white/10 pt-4">
+              <span class="text-[11px] tracking-[0.2em] text-bone/40">04</span>
+              <span class="font-serif text-2xl italic md:text-3xl">Archivo de verano</span>
+              <span class="flex items-center gap-3 text-[11px] uppercase tracking-[0.2em] text-bone/50">Editorial · 2025
+                <svg class="work-arrow" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 17L17 7" /><path d="M8 7h9v9" /></svg>
+              </span>
+            </span>
+          </button>
+        </article>
+
+        <article class="work md:col-span-5" data-category="retrato" data-title="El peso de la luz" data-label="Retrato" data-year="2023" data-specs="Leica M11 · 75mm f/2 · ISO 400" data-location="Oaxaca, México" data-aspect="4/5" data-full="https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?q=90&w=2000&auto=format&fit=crop">
+          <button type="button" class="work-open block w-full text-left" aria-label="Ver obra: El peso de la luz">
+            <span class="work-media relative block aspect-[4/5] overflow-hidden bg-white/5">
+              <img src="https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?q=80&w=1200&auto=format&fit=crop" alt="Retrato masculino con luz lateral y fondo oscuro" class="h-full w-full object-cover" loading="lazy" decoding="async" />
+            </span>
+            <span class="mt-5 grid grid-cols-[auto_1fr_auto] items-baseline gap-4 border-t border-white/10 pt-4">
+              <span class="text-[11px] tracking-[0.2em] text-bone/40">05</span>
+              <span class="font-serif text-2xl italic md:text-3xl">El peso de la luz</span>
+              <span class="flex items-center gap-3 text-[11px] uppercase tracking-[0.2em] text-bone/50">Retrato · 2023
+                <svg class="work-arrow" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 17L17 7" /><path d="M8 7h9v9" /></svg>
+              </span>
+            </span>
+          </button>
+        </article>
+
+        <article class="work md:col-span-7 md:mt-40" data-category="arquitectura" data-title="Ritmo vertical" data-label="Arquitectura" data-year="2025" data-specs="Sony A7R V · 24mm f/1.4 GM · ISO 100" data-location="Berlín, Alemania" data-aspect="5/4" data-full="https://images.unsplash.com/photo-1511818966892-d7d671e672a2?q=90&w=2000&auto=format&fit=crop">
+          <button type="button" class="work-open block w-full text-left" aria-label="Ver obra: Ritmo vertical">
+            <span class="work-media relative block aspect-[5/4] overflow-hidden bg-white/5">
+              <img src="https://images.unsplash.com/photo-1511818966892-d7d671e672a2?q=80&w=1600&auto=format&fit=crop" alt="Edificio moderno visto desde abajo con líneas verticales" class="h-full w-full object-cover" loading="lazy" decoding="async" />
+            </span>
+            <span class="mt-5 grid grid-cols-[auto_1fr_auto] items-baseline gap-4 border-t border-white/10 pt-4">
+              <span class="text-[11px] tracking-[0.2em] text-bone/40">06</span>
+              <span class="font-serif text-2xl italic md:text-3xl">Ritmo vertical</span>
+              <span class="flex items-center gap-3 text-[11px] uppercase tracking-[0.2em] text-bone/50">Arq. · 2025
+                <svg class="work-arrow" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 17L17 7" /><path d="M8 7h9v9" /></svg>
+              </span>
+            </span>
+          </button>
+        </article>
+      </div>
+    </section>
+
+    <!-- ===================== MARQUESINA ===================== -->
+    <div class="overflow-hidden border-y border-white/10 py-6 md:py-8" aria-hidden="true">
+      <div class="marquee-track flex w-max items-center whitespace-nowrap font-serif text-5xl italic text-bone/85 md:text-7xl">
+        <span class="flex items-center">
+          <span class="px-8">Retrato</span><svg width="22" height="22" viewBox="0 0 24 24" fill="#f2b49c"><path d="M12 0c.6 6.4 5.6 11.4 12 12-6.4.6-11.4 5.6-12 12-.6-6.4-5.6-11.4-12-12C6.4 11.4 11.4 6.4 12 0z" /></svg>
+          <span class="px-8 font-sans text-[0.55em] font-light not-italic tracking-[-0.03em]">Editorial</span><svg width="22" height="22" viewBox="0 0 24 24" fill="#f2b49c"><path d="M12 0c.6 6.4 5.6 11.4 12 12-6.4.6-11.4 5.6-12 12-.6-6.4-5.6-11.4-12-12C6.4 11.4 11.4 6.4 12 0z" /></svg>
+          <span class="px-8">Arquitectura</span><svg width="22" height="22" viewBox="0 0 24 24" fill="#f2b49c"><path d="M12 0c.6 6.4 5.6 11.4 12 12-6.4.6-11.4 5.6-12 12-.6-6.4-5.6-11.4-12-12C6.4 11.4 11.4 6.4 12 0z" /></svg>
+          <span class="px-8 font-sans text-[0.55em] font-light not-italic tracking-[-0.03em]">Dirección creativa</span><svg width="22" height="22" viewBox="0 0 24 24" fill="#f2b49c"><path d="M12 0c.6 6.4 5.6 11.4 12 12-6.4.6-11.4 5.6-12 12-.6-6.4-5.6-11.4-12-12C6.4 11.4 11.4 6.4 12 0z" /></svg>
+        </span>
+        <span class="flex items-center">
+          <span class="px-8">Retrato</span><svg width="22" height="22" viewBox="0 0 24 24" fill="#f2b49c"><path d="M12 0c.6 6.4 5.6 11.4 12 12-6.4.6-11.4 5.6-12 12-.6-6.4-5.6-11.4-12-12C6.4 11.4 11.4 6.4 12 0z" /></svg>
+          <span class="px-8 font-sans text-[0.55em] font-light not-italic tracking-[-0.03em]">Editorial</span><svg width="22" height="22" viewBox="0 0 24 24" fill="#f2b49c"><path d="M12 0c.6 6.4 5.6 11.4 12 12-6.4.6-11.4 5.6-12 12-.6-6.4-5.6-11.4-12-12C6.4 11.4 11.4 6.4 12 0z" /></svg>
+          <span class="px-8">Arquitectura</span><svg width="22" height="22" viewBox="0 0 24 24" fill="#f2b49c"><path d="M12 0c.6 6.4 5.6 11.4 12 12-6.4.6-11.4 5.6-12 12-.6-6.4-5.6-11.4-12-12C6.4 11.4 11.4 6.4 12 0z" /></svg>
+          <span class="px-8 font-sans text-[0.55em] font-light not-italic tracking-[-0.03em]">Dirección creativa</span><svg width="22" height="22" viewBox="0 0 24 24" fill="#f2b49c"><path d="M12 0c.6 6.4 5.6 11.4 12 12-6.4.6-11.4 5.6-12 12-.6-6.4-5.6-11.4-12-12C6.4 11.4 11.4 6.4 12 0z" /></svg>
+        </span>
+      </div>
+    </div>
+
+    <!-- ===================== ENFOQUE ===================== -->
+    <section id="enfoque" class="ruled" aria-labelledby="enfoque-label">
+      <div class="frame-cols">
+        <div class="px-[6%] pt-20 md:px-[2.2vw] md:py-28">
+          <p id="enfoque-label" class="reveal text-[11px] font-medium uppercase tracking-[0.26em] text-bone/50 md:sticky md:top-32"><span class="font-serif text-2xl normal-case italic tracking-normal text-peach">02</span>&nbsp;&nbsp;Filosofía</p>
+        </div>
+
+        <div class="px-[6%] py-10 md:px-[2.2vw] md:py-28">
+          <p id="manifesto" class="font-serif text-3xl md:text-5xl leading-tight tracking-[-0.01em]">
+            Fotografiar es negociar con el <em>tiempo</em>. Esperamos la luz exacta —la que roza un rostro, la que se quiebra contra un muro al caer la tarde— para detener aquello que ya se está yendo. No perseguimos la imagen perfecta, sino la <em>verdadera</em>: un instante efímero que, una vez impreso, se vuelve permanente.
+          </p>
+        </div>
+
+        <aside class="px-[6%] pb-14 md:px-[2.2vw] md:py-28">
+          <figure class="reveal md:sticky md:top-32">
+            <div class="aspect-[4/5] overflow-hidden bg-white/5">
+              <img src="https://images.unsplash.com/photo-1524504388940-b1c1722653e1?q=80&w=700&auto=format&fit=crop" alt="Retrato en estudio de una mujer de cabello claro sobre fondo gris oscuro" class="h-full w-full object-cover" loading="lazy" decoding="async" />
+            </div>
+            <figcaption class="mt-4 flex items-baseline justify-between gap-4 border-t border-white/10 pt-4">
+              <span class="font-serif text-xl italic">Inés Valcárcel</span>
+              <span class="text-[10px] uppercase tracking-[0.22em] text-bone/45">Fundadora</span>
+            </figcaption>
+          </figure>
+        </aside>
+      </div>
+
+      <!-- Métricas -->
+      <dl class="grid grid-cols-1 border-t border-white/10 md:grid-cols-[var(--c1)_calc(var(--c2)-var(--c1))_1fr]">
+        <div class="metric flex flex-col-reverse justify-end border-b border-white/10 px-[6%] py-10 md:border-b-0 md:px-[2.2vw] md:py-14">
+          <dt class="mt-3 text-[11px] uppercase tracking-[0.24em] text-bone/50">Años de carrera</dt>
+          <dd class="font-serif text-7xl italic leading-none"><span class="text-peach">+</span><span class="metric-num" data-count="12">12</span></dd>
+        </div>
+        <div class="metric flex flex-col-reverse justify-end gap-0 border-b border-white/10 px-[6%] py-10 md:flex-row-reverse md:items-end md:justify-between md:border-b-0 md:px-[2.2vw] md:py-14">
+          <dt class="mt-3 max-w-[26ch] text-[11px] uppercase leading-relaxed tracking-[0.24em] text-bone/50 md:mt-0 md:text-right">Publicaciones internacionales en revistas de moda, viajes y diseño</dt>
+          <dd class="font-serif text-7xl italic leading-none md:text-[clamp(5rem,9vw,10rem)]"><span class="metric-num" data-count="38">38</span></dd>
+        </div>
+        <div class="metric flex flex-col-reverse justify-end px-[6%] py-10 md:px-[2.2vw] md:py-14">
+          <dt class="mt-3 text-[11px] uppercase tracking-[0.24em] text-bone/50">Edición artesanal</dt>
+          <dd class="font-serif text-7xl italic leading-none"><span class="metric-num" data-count="100">100</span><span class="text-peach">%</span></dd>
+        </div>
+      </dl>
+    </section>
+
+    <!-- ===================== SESIONES ===================== -->
+    <section id="sesiones" class="ruled border-t border-white/10" aria-labelledby="sesiones-title">
+      <div class="frame-cols">
+        <div class="px-[6%] pt-20 md:px-[2.2vw] md:pt-28">
+          <p class="reveal text-[11px] font-medium uppercase tracking-[0.26em] text-bone/50"><span class="font-serif text-2xl normal-case italic tracking-normal text-peach">03</span>&nbsp;&nbsp;Servicios</p>
+        </div>
+        <div class="px-[6%] pt-6 md:px-[2.2vw] md:pb-20 md:pt-28">
+          <h2 id="sesiones-title" class="reveal text-[3.2rem] font-light leading-[0.95] tracking-[-0.04em] md:text-[clamp(3.5rem,6.6vw,8rem)]">
+            Sesiones <span class="font-serif italic tracking-[-0.02em]">&amp;</span><br />dirección
+          </h2>
+        </div>
+        <div class="flex items-end px-[6%] pb-14 pt-6 md:px-[2.2vw] md:pb-20 md:pt-28">
+          <p class="reveal max-w-[34ch] text-sm leading-relaxed text-bone/55">Cada encargo se construye a medida: desde la primera conversación hasta la entrega de copias firmadas.</p>
+        </div>
+      </div>
+
+      <div id="services-wrap" class="relative">
+      <ul id="services-list" class="border-t border-white/15">
+        <li>
+          <a href="#contacto" class="service-row relative grid grid-cols-[auto_1fr_auto] items-center gap-x-5 gap-y-2 border-b border-white/15 px-[6%] py-10 md:grid-cols-[var(--c1)_calc(var(--c2)-var(--c1))_1fr] md:gap-0 md:px-0" data-img="https://images.unsplash.com/photo-1496747611176-843222e1e57c?q=80&w=800&auto=format&fit=crop">
+            <span class="service-fill absolute inset-x-0 bottom-[-1px] h-px bg-peach" aria-hidden="true"></span>
+            <span class="service-num text-[11px] tracking-[0.22em] text-bone/40 md:px-[2.2vw]">01</span>
+            <span class="service-name text-[2.1rem] font-light leading-none tracking-[-0.035em] md:px-[2.2vw] md:text-[clamp(2.4rem,4.6vw,5.4rem)]">Editorial <span class="font-serif italic">&amp; moda</span></span>
+            <span class="service-meta col-span-3 flex items-center justify-between gap-6 md:col-span-1 md:px-[2.2vw]">
+              <span class="text-sm leading-relaxed text-bone/50">Lookbooks, revistas y campañas.</span>
+              <span class="service-arrow flex h-12 w-12 shrink-0 items-center justify-center rounded-full border border-white/20">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 17L17 7" /><path d="M8 7h9v9" /></svg>
+              </span>
+            </span>
+          </a>
+        </li>
+        <li>
+          <a href="#contacto" class="service-row relative grid grid-cols-[auto_1fr_auto] items-center gap-x-5 gap-y-2 border-b border-white/15 px-[6%] py-10 md:grid-cols-[var(--c1)_calc(var(--c2)-var(--c1))_1fr] md:gap-0 md:px-0" data-img="https://images.unsplash.com/photo-1534528741775-53994a69daeb?q=80&w=800&auto=format&fit=crop">
+            <span class="service-fill absolute inset-x-0 bottom-[-1px] h-px bg-peach" aria-hidden="true"></span>
+            <span class="service-num text-[11px] tracking-[0.22em] text-bone/40 md:px-[2.2vw]">02</span>
+            <span class="service-name text-[2.1rem] font-light leading-none tracking-[-0.035em] md:px-[2.2vw] md:text-[clamp(2.4rem,4.6vw,5.4rem)]">Retrato <span class="font-serif italic">de autor</span></span>
+            <span class="service-meta col-span-3 flex items-center justify-between gap-6 md:col-span-1 md:px-[2.2vw]">
+              <span class="text-sm leading-relaxed text-bone/50">Sesiones íntimas en estudio o locación.</span>
+              <span class="service-arrow flex h-12 w-12 shrink-0 items-center justify-center rounded-full border border-white/20">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 17L17 7" /><path d="M8 7h9v9" /></svg>
+              </span>
+            </span>
+          </a>
+        </li>
+        <li>
+          <a href="#contacto" class="service-row relative grid grid-cols-[auto_1fr_auto] items-center gap-x-5 gap-y-2 border-b border-white/15 px-[6%] py-10 md:grid-cols-[var(--c1)_calc(var(--c2)-var(--c1))_1fr] md:gap-0 md:px-0" data-img="https://images.unsplash.com/photo-1486718448742-163732cd1544?q=80&w=800&auto=format&fit=crop">
+            <span class="service-fill absolute inset-x-0 bottom-[-1px] h-px bg-peach" aria-hidden="true"></span>
+            <span class="service-num text-[11px] tracking-[0.22em] text-bone/40 md:px-[2.2vw]">03</span>
+            <span class="service-name text-[2.1rem] font-light leading-none tracking-[-0.035em] md:px-[2.2vw] md:text-[clamp(2.4rem,4.6vw,5.4rem)]">Arquitectura <span class="font-serif italic">&amp; espacios</span></span>
+            <span class="service-meta col-span-3 flex items-center justify-between gap-6 md:col-span-1 md:px-[2.2vw]">
+              <span class="text-sm leading-relaxed text-bone/50">Hotelería de lujo e interiorismo.</span>
+              <span class="service-arrow flex h-12 w-12 shrink-0 items-center justify-center rounded-full border border-white/20">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 17L17 7" /><path d="M8 7h9v9" /></svg>
+              </span>
+            </span>
+          </a>
+        </li>
+        <li>
+          <a href="#contacto" class="service-row relative grid grid-cols-[auto_1fr_auto] items-center gap-x-5 gap-y-2 border-b border-white/15 px-[6%] py-10 md:grid-cols-[var(--c1)_calc(var(--c2)-var(--c1))_1fr] md:gap-0 md:px-0" data-img="https://images.unsplash.com/photo-1469334031218-e382a71b716b?q=80&w=800&auto=format&fit=crop">
+            <span class="service-fill absolute inset-x-0 bottom-[-1px] h-px bg-peach" aria-hidden="true"></span>
+            <span class="service-num text-[11px] tracking-[0.22em] text-bone/40 md:px-[2.2vw]">04</span>
+            <span class="service-name text-[2.1rem] font-light leading-none tracking-[-0.035em] md:px-[2.2vw] md:text-[clamp(2.4rem,4.6vw,5.4rem)]">Dirección <span class="font-serif italic">creativa</span></span>
+            <span class="service-meta col-span-3 flex items-center justify-between gap-6 md:col-span-1 md:px-[2.2vw]">
+              <span class="text-sm leading-relaxed text-bone/50">Conceptualización visual integral.</span>
+              <span class="service-arrow flex h-12 w-12 shrink-0 items-center justify-center rounded-full border border-white/20">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 17L17 7" /><path d="M8 7h9v9" /></svg>
+              </span>
+            </span>
+          </a>
+        </li>
+      </ul>
+
+        <!-- Tarjeta de imagen: vive en la columna izquierda y se desliza hasta la fila activa -->
+        <div id="service-float" class="pointer-events-none absolute top-0 z-10 hidden opacity-0 lg:block" style="left: 2.2vw; width: min(260px, calc(var(--c1) - 4.4vw)); aspect-ratio: 4 / 5;" aria-hidden="true">
+          <div id="service-inner" class="relative h-full w-full overflow-hidden bg-white/5 shadow-[0_30px_60px_-25px_rgba(0,0,0,0.7)]">
+            <div id="service-layers" class="absolute inset-0"></div>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- ===================== CIERRE / CONTACTO ===================== -->
+  <footer id="contacto" class="ruled relative overflow-hidden" aria-labelledby="contacto-title">
+    <div class="frame-cols">
+      <div class="px-[6%] pt-20 md:px-[2.2vw] md:pt-28">
+        <p class="reveal text-[11px] font-medium uppercase tracking-[0.26em] text-bone/50"><span class="font-serif text-2xl normal-case italic tracking-normal text-peach">04</span>&nbsp;&nbsp;Contacto</p>
+      </div>
+      <div class="px-[6%] pt-6 md:px-[2.2vw] md:pt-28">
+        <h2 id="contacto-title" class="reveal text-[2.6rem] font-light leading-[1] tracking-[-0.04em] md:text-[clamp(2.8rem,4.8vw,6rem)]">
+          Hablemos de tu <span class="font-serif italic tracking-[-0.02em]">próxima luz</span>
+        </h2>
+      </div>
+      <div class="flex flex-col justify-end gap-4 px-[6%] pb-6 pt-10 md:px-[2.2vw] md:pt-28">
+        <p class="reveal text-sm leading-relaxed text-bone/60">Agenda abierta para enero — abril 2027.<br />+52 (55) 4718 2093</p>
+        <a href="#inicio" class="reveal press inline-flex h-12 w-fit items-center rounded-full bg-bone px-7 text-[12px] font-medium uppercase tracking-[0.16em] text-ink">Agendar fecha</a>
+      </div>
+    </div>
+    <p class="select-none px-[2vw] pt-16 text-center font-serif text-[26vw] italic leading-[0.78] text-bone/[0.07]" aria-hidden="true">Lumière</p>
+    <div class="flex flex-col gap-2 border-t border-white/10 px-[6%] py-6 text-[10px] uppercase tracking-[0.22em] text-bone/40 md:flex-row md:justify-between md:px-[2.2vw]">
+      <span>© 2026 Lumière Studio</span>
+      <span>Madrid — Ciudad de México</span>
+    </div>
+  </footer>
+
+  <!-- ===================== LIGHTBOX ===================== -->
+  <div id="lightbox" class="fixed inset-0 z-[60] hidden" role="dialog" aria-modal="true" aria-labelledby="lb-title">
+    <div id="lb-backdrop" class="absolute inset-0 bg-ink/95 backdrop-blur-xl"></div>
+
+    <div class="relative flex h-full flex-col">
+      <div class="flex h-[76px] shrink-0 items-center justify-between border-b border-white/10 px-[6%] md:px-[2.2vw]">
+        <span id="lb-counter" class="lb-fade text-[11px] tracking-[0.26em] text-bone/50">01 / 06</span>
+        <button id="lb-close" type="button" class="press group flex items-center gap-3 text-[11px] font-medium uppercase tracking-[0.26em] text-bone/70 transition-colors duration-200 hover:text-bone">
+          Cerrar
+          <span class="glass flex h-10 w-10 items-center justify-center rounded-full">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" /></svg>
+          </span>
+        </button>
+      </div>
+
+      <div class="grid min-h-0 flex-1 grid-rows-[1fr_auto] lg:grid-cols-[1fr_360px] lg:grid-rows-1">
+        <div id="lb-stage" class="relative flex min-h-0 items-center justify-center p-[6%] md:p-[2.2vw]">
+          <div id="lb-frame" class="relative overflow-hidden bg-white/5">
+            <img id="lb-img" src="" alt="" class="absolute inset-0 h-full w-full object-cover" />
+          </div>
+        </div>
+
+        <aside class="border-t border-white/10 px-[6%] py-6 md:px-[2.2vw] lg:flex lg:flex-col lg:justify-end lg:border-l lg:border-t-0 lg:py-10">
+          <p id="lb-category" class="lb-fade text-[10px] font-medium uppercase tracking-[0.26em] text-bone/50">Editorial — 2025</p>
+          <h3 id="lb-title" class="lb-fade mt-3 font-serif text-3xl italic leading-tight md:text-5xl">Silencio en lino</h3>
+          <dl class="mt-6 grid grid-cols-2 gap-x-6 gap-y-5 border-t border-white/10 pt-6 text-sm lg:grid-cols-1">
+            <div class="lb-fade">
+              <dt class="text-[10px] uppercase tracking-[0.26em] text-bone/40">Ficha técnica</dt>
+              <dd id="lb-specs" class="mt-1 text-bone/85">Leica M11 · 35mm f/1.4 · ISO 160</dd>
+            </div>
+            <div class="lb-fade">
+              <dt class="text-[10px] uppercase tracking-[0.26em] text-bone/40">Locación</dt>
+              <dd id="lb-location" class="mt-1 text-bone/85">Lisboa, Portugal</dd>
+            </div>
+          </dl>
+          <div class="lb-fade mt-6 flex gap-2 lg:mt-10">
+            <button id="lb-prev" type="button" class="glass press flex h-11 w-11 items-center justify-center rounded-full" aria-label="Obra anterior">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 6l-6 6 6 6" /></svg>
+            </button>
+            <button id="lb-next" type="button" class="glass press flex h-11 w-11 items-center justify-center rounded-full" aria-label="Obra siguiente">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6" /></svg>
+            </button>
+          </div>
+        </aside>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===================== SCRIPTS ===================== -->
+  <script>
+    (() => {
+      const M = window.Motion;
+      const root = document.documentElement;
+
+      // Sin Motion la página se muestra completa y estática
+      if (!M) {
+        root.classList.remove('js');
+        return;
+      }
+
+      const { animate, inView, scroll, stagger } = M;
+      const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      const finePointer = window.matchMedia('(hover: hover) and (pointer: fine)').matches;
+      const easeOut = [0.23, 1, 0.32, 1];
+      const easeInOut = [0.77, 0, 0.175, 1];
+      const pad = (n) => String(n).padStart(2, '0');
+
+      /* ---------- Entrada del hero ---------- */
+      const headerItems = document.querySelectorAll('#site-header [data-enter]');
+      const heroWords = document.querySelectorAll('.hero-word');
+      const lines = document.querySelectorAll('[data-line]');
+      const polaroid = document.getElementById('hero-polaroid');
+      const heroSoft = document.querySelectorAll('#inicio [data-enter]:not(#hero-polaroid)');
+
+      if (reduce) {
+        document.querySelectorAll('[data-enter]').forEach((el) => { el.style.opacity = 1; });
+      } else {
+        lines.forEach((line, i) => {
+          const prop = line.dataset.line === 'v' ? 'scaleY' : 'scaleX';
+          animate(line, { [prop]: [0, 1] }, { duration: 1.4, delay: 0.15 + i * 0.12, ease: easeInOut });
+        });
+        animate(headerItems, { opacity: [0, 1], y: [-18, 0] }, { duration: 0.7, delay: stagger(0.06, { startDelay: 0.2 }), ease: easeOut });
+        animate(heroWords, { y: ['110%', '0%'] }, { duration: 1.1, delay: stagger(0.12, { startDelay: 0.35 }), ease: easeOut });
+        animate(heroSoft, { opacity: [0, 1], y: [24, 0] }, { duration: 0.9, delay: stagger(0.1, { startDelay: 0.8 }), ease: easeOut });
+        animate(polaroid, { opacity: [0, 1], y: [-140, 0], rotate: [6, -13] }, { type: 'spring', stiffness: 90, damping: 13, mass: 1, delay: 1.05 });
+      }
+
+      /* ---------- Video del hero: bucle con fundido cruzado ---------- */
+      const heroVideos = [...document.querySelectorAll('.hero-video')];
+      const FADE = 1; // el último segundo funde sobre el primero
+
+      if (!reduce && heroVideos.length === 2) {
+        heroVideos.forEach((v) => { v.src = v.dataset.src; v.preload = 'auto'; });
+        let current = 0;
+        let crossing = false;
+
+        const [first] = heroVideos;
+        first.addEventListener('loadeddata', () => {
+          first.play().then(() => {
+            animate(first, { opacity: [0, 1] }, { duration: 0.8, ease: easeOut });
+          }).catch(() => {});
+        }, { once: true });
+
+        const tick = () => {
+          const a = heroVideos[current];
+          const b = heroVideos[1 - current];
+          if (!crossing && a.duration && a.currentTime >= a.duration - FADE) {
+            crossing = true;
+            b.currentTime = 0;
+            b.style.zIndex = 2;
+            a.style.zIndex = 1;
+            b.play().then(() => {
+              animate(b, { opacity: [0, 1] }, { duration: FADE, ease: 'linear' }).then(() => {
+                a.pause();
+                a.style.opacity = 0;
+                current = 1 - current;
+                crossing = false;
+              });
+            }).catch(() => { crossing = false; });
+          }
+          requestAnimationFrame(tick);
+        };
+        requestAnimationFrame(tick);
+
+        // Pausa cuando la pestaña no está visible
+        document.addEventListener('visibilitychange', () => {
+          const v = heroVideos[current];
+          if (document.hidden) heroVideos.forEach((x) => x.pause());
+          else if (v.style.opacity !== '0') v.play().catch(() => {});
+        });
+      }
+
+      /* ---------- Header sólido al salir del hero ---------- */
+      const header = document.getElementById('site-header');
+      const hero = document.getElementById('inicio');
+      scroll((progress) => {
+        header.classList.toggle('is-solid', progress > 0.82);
+      }, { target: hero, offset: ['start start', 'end start'] });
+
+      /* Parallax suave de la foto y la polaroid */
+      if (!reduce) {
+        scroll(animate('#hero-photo', { y: ['0%', '14%'] }, { ease: 'linear' }), { target: hero, offset: ['start start', 'end start'] });
+        scroll(animate('.h-watermark', { y: ['0%', '-40%'] }, { ease: 'linear' }), { target: hero, offset: ['start start', 'end start'] });
+      }
+
+      /* ---------- Revelados genéricos ---------- */
+      document.querySelectorAll('.reveal').forEach((el) => {
+        if (reduce) return;
+        el.style.opacity = 0;
+        inView(el, () => {
+          animate(el, { opacity: [0, 1], y: [28, 0] }, { duration: 0.9, ease: easeOut });
+        }, { amount: 0.3 });
+      });
+
+      /* ---------- Menú móvil ---------- */
+      const menu = document.getElementById('mobile-menu');
+      const toggle = document.getElementById('menu-toggle');
+      const burgerTop = document.getElementById('burger-top');
+      const burgerBottom = document.getElementById('burger-bottom');
+      const menuLinks = menu.querySelectorAll('.menu-link');
+      let menuOpen = false;
+
+      function setMenu(open) {
+        menuOpen = open;
+        toggle.setAttribute('aria-expanded', String(open));
+        toggle.setAttribute('aria-label', open ? 'Cerrar menú' : 'Abrir menú');
+        burgerTop.style.transform = open ? 'translateY(4px) rotate(45deg)' : '';
+        burgerBottom.style.transform = open ? 'translateY(-4px) rotate(-45deg)' : '';
+        document.body.style.overflow = open ? 'hidden' : '';
+
+        if (open) {
+          menu.style.visibility = 'visible';
+          animate(menu, { clipPath: ['inset(0% 0% 100% 0%)', 'inset(0% 0% 0% 0%)'] }, { duration: 0.6, ease: easeInOut });
+          animate(menu.querySelectorAll('ul .menu-link'), { y: ['105%', '0%'] }, { duration: 0.7, delay: stagger(0.06, { startDelay: 0.25 }), ease: easeOut });
+          animate(menu.querySelector('.menu-foot'), { opacity: [0, 1], y: [16, 0] }, { duration: 0.5, delay: 0.45, ease: easeOut });
+        } else {
+          animate(menu, { clipPath: ['inset(0% 0% 0% 0%)', 'inset(0% 0% 100% 0%)'] }, { duration: 0.4, ease: easeInOut })
+            .then(() => { if (!menuOpen) menu.style.visibility = 'hidden'; });
+        }
+      }
+
+      toggle.addEventListener('click', () => setMenu(!menuOpen));
+      menuLinks.forEach((link) => link.addEventListener('click', () => { if (menuOpen) setMenu(false); }));
+      window.addEventListener('resize', () => { if (window.innerWidth >= 1024 && menuOpen) setMenu(false); });
+
+      /* ---------- Obras: aparición ---------- */
+      const works = [...document.querySelectorAll('.work')];
+      const pendingReveal = new Map();
+
+      works.forEach((work) => {
+        if (reduce) return;
+        work.style.opacity = 0;
+        const stop = inView(work, () => {
+          pendingReveal.delete(work);
+          animate(work, { opacity: [0, 1], y: [50, 0] }, { duration: 1, ease: easeOut });
+        }, { amount: 0.15 });
+        pendingReveal.set(work, stop);
+      });
+
+      /* ---------- Obras: filtros con indicador recortado + FLIP ---------- */
+      const filterBtns = [...document.querySelectorAll('.filter-btn')];
+      const filterBase = document.getElementById('filter-base');
+      const filterActive = document.getElementById('filter-active');
+      const countEl = document.getElementById('works-count');
+
+      function clipFor(btn) {
+        const base = filterBase.getBoundingClientRect();
+        const r = btn.getBoundingClientRect();
+        const left = r.left - base.left;
+        const right = base.right - r.right;
+        return `inset(0px ${right.toFixed(1)}px 0px ${left.toFixed(1)}px round 999px)`;
+      }
+
+      function moveIndicator(btn, instant) {
+        const target = clipFor(btn);
+        if (instant || reduce) {
+          filterActive.style.clipPath = target;
+          return;
+        }
+        animate(filterActive, { clipPath: [getComputedStyle(filterActive).clipPath, target] }, { duration: 0.45, ease: easeOut });
+      }
+
+      const activeBtn = () => filterBtns.find((b) => b.getAttribute('aria-pressed') === 'true');
+      document.fonts.ready.then(() => moveIndicator(activeBtn(), true));
+      window.addEventListener('resize', () => moveIndicator(activeBtn(), true));
+
+      let filtering = false;
+
+      async function applyFilter(filter) {
+        filtering = true;
+
+        // Las piezas aún no reveladas se dan por mostradas para no competir con el filtro
+        pendingReveal.forEach((stop, work) => { stop(); work.style.opacity = 1; });
+        pendingReveal.clear();
+
+        const show = works.filter((w) => filter === 'all' || w.dataset.category === filter);
+        const leaving = works.filter((w) => !show.includes(w) && !w.hidden);
+
+        if (leaving.length && !reduce) {
+          await animate(leaving, { opacity: 0, scale: 0.96 }, { duration: 0.22, ease: easeOut });
+        }
+
+        const first = new Map(works.map((w) => [w, w.hidden ? null : w.getBoundingClientRect()]));
+        works.forEach((w) => { w.hidden = !show.includes(w); });
+
+        show.forEach((w, i) => {
+          const before = first.get(w);
+          if (reduce) {
+            w.style.opacity = 1;
+            return;
+          }
+          if (!before) {
+            animate(w, { opacity: [0, 1], scale: [0.96, 1], x: 0, y: 0 }, { duration: 0.5, delay: i * 0.05, ease: easeOut });
+            return;
+          }
+          const after = w.getBoundingClientRect();
+          const dx = before.left - after.left;
+          const dy = before.top - after.top;
+          animate(w, { x: [dx, 0], y: [dy, 0], opacity: 1, scale: 1 }, { type: 'spring', stiffness: 170, damping: 26 });
+        });
+
+        countEl.textContent = pad(show.length);
+        filtering = false;
+      }
+
+      filterBtns.forEach((btn) => {
+        btn.addEventListener('click', () => {
+          if (btn.getAttribute('aria-pressed') === 'true' || filtering) return;
+          filterBtns.forEach((b) => b.setAttribute('aria-pressed', 'false'));
+          btn.setAttribute('aria-pressed', 'true');
+          moveIndicator(btn);
+          applyFilter(btn.dataset.filter);
+        });
+      });
+
+      /* ---------- Lightbox con transición de elemento compartido ---------- */
+      const lightbox = document.getElementById('lightbox');
+      const lbBackdrop = document.getElementById('lb-backdrop');
+      const lbStage = document.getElementById('lb-stage');
+      const lbFrame = document.getElementById('lb-frame');
+      const lbImg = document.getElementById('lb-img');
+      const lbTitle = document.getElementById('lb-title');
+      const lbCategory = document.getElementById('lb-category');
+      const lbSpecs = document.getElementById('lb-specs');
+      const lbLocation = document.getElementById('lb-location');
+      const lbCounter = document.getElementById('lb-counter');
+      const lbClose = document.getElementById('lb-close');
+      const lbFades = lightbox.querySelectorAll('.lb-fade');
+
+      let lbOpen = false;
+      let lbIndex = 0;
+      let lbWork = null;
+      let lastFocus = null;
+
+      const visibleWorks = () => works.filter((w) => !w.hidden);
+      const ratioOf = (work) => {
+        const [w, h] = work.dataset.aspect.split('/').map(Number);
+        return w / h;
+      };
+
+      // Ajusta el marco a la proporción de la pieza dentro del espacio disponible
+      function fitFrame(work) {
+        const stage = lbStage.getBoundingClientRect();
+        const cs = getComputedStyle(lbStage);
+        const availW = stage.width - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight);
+        const availH = stage.height - parseFloat(cs.paddingTop) - parseFloat(cs.paddingBottom);
+        const ratio = ratioOf(work);
+        let w = availW;
+        let h = w / ratio;
+        if (h > availH) {
+          h = availH;
+          w = h * ratio;
+        }
+        lbFrame.style.width = `${Math.round(w)}px`;
+        lbFrame.style.height = `${Math.round(h)}px`;
+      }
+
+      function fillLightbox(work) {
+        const thumb = work.querySelector('img');
+        lbImg.src = thumb.currentSrc || thumb.src;
+        lbImg.alt = thumb.alt;
+        const hi = new Image();
+        hi.onload = () => { if (lbWork === work) lbImg.src = hi.src; };
+        hi.src = work.dataset.full;
+        lbTitle.textContent = work.dataset.title;
+        lbCategory.textContent = `${work.dataset.label} — ${work.dataset.year}`;
+        lbSpecs.textContent = work.dataset.specs;
+        lbLocation.textContent = work.dataset.location;
+        lbCounter.textContent = `${pad(lbIndex + 1)} / ${pad(visibleWorks().length)}`;
+      }
+
+      function deltaTo(media) {
+        const from = media.getBoundingClientRect();
+        const to = lbFrame.getBoundingClientRect();
+        return {
+          x: from.left + from.width / 2 - (to.left + to.width / 2),
+          y: from.top + from.height / 2 - (to.top + to.height / 2),
+          scale: from.width / to.width,
+        };
+      }
+
+      function openLightbox(work) {
+        if (lbOpen) return;
+        lbOpen = true;
+        lbWork = work;
+        lastFocus = document.activeElement;
+        lbIndex = visibleWorks().indexOf(work);
+
+        lightbox.classList.remove('hidden');
+        document.body.style.overflow = 'hidden';
+        fitFrame(work);
+        fillLightbox(work);
+
+        const media = work.querySelector('.work-media');
+        if (reduce) {
+          animate(lightbox, { opacity: [0, 1] }, { duration: 0.2 });
+        } else {
+          const d = deltaTo(media);
+          media.style.visibility = 'hidden';
+          animate(lbBackdrop, { opacity: [0, 1] }, { duration: 0.35, ease: easeOut });
+          animate(lbFrame, { x: [d.x, 0], y: [d.y, 0], scale: [d.scale, 1] }, { type: 'spring', stiffness: 210, damping: 28 })
+            .then(() => { media.style.visibility = ''; });
+          animate(lbFades, { opacity: [0, 1], y: [16, 0] }, { duration: 0.5, delay: stagger(0.05, { startDelay: 0.2 }), ease: easeOut });
+        }
+        lbClose.focus({ preventScroll: true });
+      }
+
+      function closeLightbox() {
+        if (!lbOpen) return;
+        lbOpen = false;
+        const media = lbWork.querySelector('.work-media');
+
+        const finish = () => {
+          lightbox.classList.add('hidden');
+          media.style.visibility = '';
+          lbFrame.style.transform = '';
+          document.body.style.overflow = '';
+          lbWork = null;
+          if (lastFocus) lastFocus.focus({ preventScroll: true });
+        };
+
+        if (reduce) {
+          finish();
+          return;
+        }
+
+        // La salida es más corta que la entrada
+        const d = deltaTo(media);
+        media.style.visibility = 'hidden';
+        animate(lbFades, { opacity: 0 }, { duration: 0.15 });
+        animate(lbBackdrop, { opacity: 0 }, { duration: 0.3, ease: easeOut });
+        animate(lbFrame, { x: d.x, y: d.y, scale: d.scale }, { duration: 0.32, ease: easeOut }).then(finish);
+      }
+
+      async function stepLightbox(dir) {
+        const list = visibleWorks();
+        if (list.length < 2) return;
+        lbIndex = (lbIndex + dir + list.length) % list.length;
+        const work = list[lbIndex];
+        lbWork = work;
+
+        if (!reduce) {
+          await animate([lbFrame, ...lbFades], { opacity: 0, filter: 'blur(6px)' }, { duration: 0.18, ease: easeOut });
+        }
+        fitFrame(work);
+        fillLightbox(work);
+        if (!reduce) {
+          animate(lbFrame, { opacity: [0, 1], filter: ['blur(6px)', 'blur(0px)'], x: [24 * dir, 0] }, { duration: 0.4, ease: easeOut });
+          animate(lbFades, { opacity: [0, 1], filter: ['blur(6px)', 'blur(0px)'] }, { duration: 0.35, delay: stagger(0.03), ease: easeOut });
+        }
+      }
+
+      works.forEach((work) => {
+        work.querySelector('.work-open').addEventListener('click', () => openLightbox(work));
+      });
+      lbClose.addEventListener('click', closeLightbox);
+      document.getElementById('lb-prev').addEventListener('click', () => stepLightbox(-1));
+      document.getElementById('lb-next').addEventListener('click', () => stepLightbox(1));
+      lbStage.addEventListener('click', (e) => { if (e.target === lbStage) closeLightbox(); });
+      window.addEventListener('resize', () => { if (lbOpen && lbWork) fitFrame(lbWork); });
+
+      document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') {
+          if (lbOpen) closeLightbox();
+          else if (menuOpen) setMenu(false);
+        }
+        if (!lbOpen) return;
+        if (e.key === 'ArrowRight') stepLightbox(1);
+        if (e.key === 'ArrowLeft') stepLightbox(-1);
+      });
+
+      /* ---------- Enfoque: manifiesto con scrub ---------- */
+      const manifesto = document.getElementById('manifesto');
+
+      // Envuelve cada palabra en un span y conserva las cursivas
+      (function splitWords(node) {
+        [...node.childNodes].forEach((child) => {
+          if (child.nodeType === Node.TEXT_NODE) {
+            const frag = document.createDocumentFragment();
+            child.textContent.split(/(\s+)/).forEach((part) => {
+              if (!part) return;
+              if (/^\s+$/.test(part)) {
+                frag.appendChild(document.createTextNode(part));
+              } else {
+                const span = document.createElement('span');
+                span.className = 'mf-word';
+                span.textContent = part;
+                frag.appendChild(span);
+              }
+            });
+            child.replaceWith(frag);
+          } else if (child.nodeType === Node.ELEMENT_NODE) {
+            splitWords(child);
+          }
+        });
+      })(manifesto);
+
+      const words = [...manifesto.querySelectorAll('.mf-word')];
+      const span = 1 / words.length;
+
+      scroll((progress) => {
+        words.forEach((w, i) => {
+          const local = Math.min(1, Math.max(0, (progress - i * span * 0.85) / (span * 4)));
+          w.style.opacity = (0.2 + local * 0.8).toFixed(3);
+        });
+      }, { target: manifesto, offset: ['start 0.85', 'end 0.5'] });
+
+      /* ---------- Enfoque: contadores ---------- */
+      document.querySelectorAll('.metric-num').forEach((el) => {
+        if (reduce) return;
+        const target = Number(el.dataset.count);
+        el.textContent = '0';
+        inView(el, () => {
+          animate(0, target, { duration: 1.8, ease: easeOut, onUpdate: (v) => { el.textContent = Math.round(v); } });
+        }, { amount: 0.6 });
+      });
+
+      /* ---------- Sesiones: tarjeta de imagen en la columna izquierda ---------- */
+      const floatBox = document.getElementById('service-float');
+      const floatInner = document.getElementById('service-inner');
+      const floatLayers = document.getElementById('service-layers');
+      const servicesWrap = document.getElementById('services-wrap');
+      const rows = [...document.querySelectorAll('.service-row')];
+      const desktop = window.matchMedia('(min-width: 1024px)');
+
+      if (finePointer) {
+        const layers = rows.map((row) => {
+          const img = document.createElement('img');
+          img.src = row.dataset.img;
+          img.alt = '';
+          img.decoding = 'async';
+          img.className = 'absolute inset-0 h-full w-full object-cover';
+          img.style.opacity = 0;
+          floatLayers.appendChild(img);
+          return img;
+        });
+
+        let visible = false;
+        let active = -1;
+        let currentY = 0;
+        let targetY = 0;
+        let rafId = null;
+
+        // Centra la tarjeta en la fila activa sin salirse de la lista
+        const yFor = (row) => {
+          const h = floatBox.offsetHeight;
+          const max = servicesWrap.offsetHeight - h;
+          return Math.max(0, Math.min(max, row.offsetTop + row.offsetHeight / 2 - h / 2));
+        };
+
+        // Un solo bucle que se detiene al llegar: nada se recalcula mientras el ratón se mueve
+        const glide = () => {
+          currentY += (targetY - currentY) * (reduce ? 1 : 0.16);
+          if (Math.abs(targetY - currentY) < 0.4) currentY = targetY;
+          floatBox.style.transform = `translate3d(0, ${currentY.toFixed(1)}px, 0)`;
+          rafId = currentY === targetY ? null : requestAnimationFrame(glide);
+        };
+
+        const moveTo = (row, instant) => {
+          targetY = yFor(row);
+          if (instant) currentY = targetY;
+          if (!rafId) rafId = requestAnimationFrame(glide);
+        };
+
+        const showLayer = (index) => {
+          if (index === active) return;
+          const previous = layers[active];
+          const next = layers[index];
+          if (previous) {
+            previous.style.zIndex = 1;
+            animate(previous, { opacity: 0 }, { duration: 0.3, ease: easeOut });
+          }
+          next.style.zIndex = 2;
+          animate(next, { opacity: [0, 1], scale: reduce ? 1 : [1.08, 1] }, { duration: 0.5, ease: easeOut });
+          active = index;
+        };
+
+        const enter = (row, index) => {
+          if (!desktop.matches) return;
+          if (!visible) {
+            visible = true;
+            servicesWrap.classList.add('services-active');
+            moveTo(row, true);
+            animate(floatBox, { opacity: 1 }, { duration: 0.3, ease: easeOut });
+            if (!reduce) animate(floatInner, { scale: [0.94, 1] }, { duration: 0.45, ease: easeOut });
+          } else {
+            moveTo(row);
+          }
+          showLayer(index);
+        };
+
+        const leave = () => {
+          if (!visible) return;
+          visible = false;
+          servicesWrap.classList.remove('services-active');
+          animate(floatBox, { opacity: 0 }, { duration: 0.2, ease: easeOut });
+          if (layers[active]) animate(layers[active], { opacity: 0 }, { duration: 0.2 });
+          active = -1;
+        };
+
+        rows.forEach((row, i) => {
+          row.addEventListener('mouseenter', () => enter(row, i));
+          row.addEventListener('focus', () => enter(row, i));
+          row.addEventListener('blur', leave);
+        });
+        servicesWrap.addEventListener('mouseleave', leave);
+      }
+    })();
+  </script>
+</body>
+</html>
