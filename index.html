@@ -901,7 +901,13 @@
           second.src = videoSrc;
           second.addEventListener('canplay', () => { first.loop = false; }, { once: true });
           // Arranque y pausa invisibles para que el iPhone la tenga lista para el fundido
-          second.play().then(() => { second.pause(); second.currentTime = 0; }).catch(() => {});
+          // Solo se pausa si el fundido no la ha tomado ya como copia activa
+          second.play().then(() => {
+            if (!crossing && current === 0) {
+              second.pause();
+              second.currentTime = 0;
+            }
+          }).catch(() => {});
         };
         first.addEventListener('canplaythrough', prepareSecond, { once: true });
         first.addEventListener('playing', () => setTimeout(prepareSecond, 3000), { once: true });
