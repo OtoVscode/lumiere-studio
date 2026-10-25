@@ -10,7 +10,7 @@
   <!-- Fuentes -->
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500&family=Playfair+Display:ital,wght@0,400;1,400;1,500&family=Caveat:wght@500&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500&family=Playfair+Display:ital,wght@0,400;1,400;1,500&display=swap" rel="stylesheet" />
 
   <!-- Tailwind CSS -->
   <script src="https://cdn.tailwindcss.com"></script>
@@ -26,7 +26,6 @@
           fontFamily: {
             sans: ['Geist', 'system-ui', 'sans-serif'],
             serif: ['"Playfair Display"', 'Georgia', 'serif'],
-            hand: ['Caveat', 'cursive'],
           },
         },
       },
@@ -183,12 +182,6 @@
     .h-label {
       display: none;
     }
-    .h-polaroid {
-      position: absolute;
-      right: 6%;
-      top: 21%;
-      width: 100px;
-    }
     .h-watermark {
       position: absolute;
       left: 0;
@@ -219,13 +212,6 @@
         position: absolute;
         left: 2.2vw;
         bottom: 2.6vw;
-      }
-      .h-polaroid {
-        right: auto;
-        top: auto;
-        left: calc(var(--c1) - 5.6vw);
-        bottom: calc(2.6vw + 96px);
-        width: clamp(130px, 11.5vw, 190px);
       }
       .h-watermark {
         bottom: -3.4vw;
@@ -264,27 +250,12 @@
       .hero-line.h {
         display: none;
       }
-      .h-polaroid {
-        top: auto;
-        right: auto;
-        left: 6%;
-        bottom: 6vh;
-        width: 20vh;
-      }
-      #hero-polaroid {
-        padding: 4px 4px 0;
-      }
-      .h-polaroid figcaption {
-        font-size: 2.6vh;
-        padding: 3px 0;
-      }
       .h-watermark {
         font-size: min(24vw, 48vh);
       }
     }
     @media (max-height: 560px) and (orientation: landscape) and (min-width: 768px) {
-      .h-headline,
-      .h-polaroid {
+      .h-headline {
         left: 2.2vw;
       }
       .h-copy {
@@ -512,16 +483,6 @@
       <p class="h-label text-[11px] font-medium uppercase leading-[1.9] tracking-[0.26em]" data-enter>
         Fotografía<br />Editorial<br />De autor
       </p>
-
-      <!-- Polaroid -->
-      <figure id="hero-polaroid" class="h-polaroid bg-[#fbf8f3] p-2 pb-0 shadow-[0_24px_50px_-18px_rgba(40,20,26,0.65)] md:p-2.5 md:pb-0" style="transform: rotate(-13deg)" data-enter>
-        <img
-          src="https://d2ol7oe51mr4n9.cloudfront.net/user_38xzZboKViGWJOttwIXH07lWA1P/4612f265-40f3-4fc9-af4c-b03c289c2b75.jpg"
-          alt="Mujer rubia con gafas de sol, camiseta lila y vaqueros claros sentada en unas escaleras de piedra frente a un edificio antiguo"
-          class="aspect-[4/5] w-full object-cover"
-        />
-        <figcaption class="whitespace-nowrap py-1.5 text-center font-hand text-[15px] leading-none text-[#3a2c2a] md:py-2 md:text-[clamp(18px,1.6vw,26px)]">Lisboa, 6:41 p.m.</figcaption>
-      </figure>
     </section>
 
     <!-- ===================== OBRAS ===================== -->
@@ -896,8 +857,7 @@
       const headerItems = document.querySelectorAll('#site-header [data-enter]');
       const heroWords = document.querySelectorAll('.hero-word');
       const lines = document.querySelectorAll('[data-line]');
-      const polaroid = document.getElementById('hero-polaroid');
-      const heroSoft = document.querySelectorAll('#inicio [data-enter]:not(#hero-polaroid)');
+      const heroSoft = document.querySelectorAll('#inicio [data-enter]');
 
       if (reduce) {
         document.querySelectorAll('[data-enter]').forEach((el) => { el.style.opacity = 1; });
@@ -908,9 +868,7 @@
         });
         animate(headerItems, { opacity: [0, 1], y: [-18, 0] }, { duration: 0.7, delay: stagger(0.06, { startDelay: 0.2 }), ease: easeOut });
         animate(heroWords, { y: ['110%', '0%'] }, { duration: 1.1, delay: stagger(0.12, { startDelay: 0.35 }), ease: easeOut });
-        animate(heroSoft, { opacity: [0, 1], y: [24, 0] }, { duration: 0.9, delay: stagger(0.1, { startDelay: 0.8 }), ease: easeOut });
-        animate(polaroid, { opacity: [0, 1], y: [-140, 0], rotate: [6, -13] }, { type: 'spring', stiffness: 90, damping: 13, mass: 1, delay: 1.05 });
-      }
+        animate(heroSoft, { opacity: [0, 1], y: [24, 0] }, { duration: 0.9, delay: stagger(0.1, { startDelay: 0.8 }), ease: easeOut });      }
 
       /* ---------- Video del hero: bucle con fundido cruzado ---------- */
       const heroVideos = [...document.querySelectorAll('.hero-video')];
@@ -976,7 +934,7 @@
         header.classList.toggle('is-solid', progress > 0.82);
       }, { target: hero, offset: ['start start', 'end start'] });
 
-      /* Parallax suave de la foto y la polaroid */
+      /* Parallax suave de la foto y la marca de agua */
       if (!reduce) {
         scroll(animate('#hero-photo', { y: ['0%', '14%'] }, { ease: 'linear' }), { target: hero, offset: ['start start', 'end start'] });
         scroll(animate('.h-watermark', { y: ['0%', '-40%'] }, { ease: 'linear' }), { target: hero, offset: ['start start', 'end start'] });
