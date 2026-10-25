@@ -433,8 +433,8 @@
             fetchpriority="high"
           />
           <!-- Dos copias del mismo clip: una funde sobre la otra para que el bucle no salte -->
-          <video class="hero-video hero-media absolute inset-0 h-full w-full object-cover opacity-0" muted playsinline preload="none" aria-hidden="true" data-src="media/hero-60-desktop.mp4" data-src-mobile="media/hero-60-mobile.mp4"></video>
-          <video class="hero-video hero-media absolute inset-0 h-full w-full object-cover opacity-0" muted playsinline preload="none" aria-hidden="true" data-src="media/hero-60-desktop.mp4" data-src-mobile="media/hero-60-mobile.mp4"></video>
+          <video class="hero-video hero-media absolute inset-0 h-full w-full object-cover opacity-0" muted playsinline preload="none" aria-hidden="true" data-src="media/hero-60-desktop.mp4" data-src-mobile="media/hero-30-mobile.mp4"></video>
+          <video class="hero-video hero-media absolute inset-0 h-full w-full object-cover opacity-0" muted playsinline preload="none" aria-hidden="true" data-src="media/hero-60-desktop.mp4" data-src-mobile="media/hero-30-mobile.mp4"></video>
         </div>
         <!-- Viraje para legibilidad y fundido al color de página -->
         <div class="absolute inset-0 bg-[linear-gradient(90deg,rgba(40,22,28,0.5)_0%,rgba(40,22,28,0.12)_38%,rgba(40,22,28,0.06)_62%,rgba(40,22,28,0.42)_100%)]" aria-hidden="true"></div>
@@ -886,17 +886,25 @@
         first.preload = 'auto';
         first.loop = true; // hasta que la segunda copia esté lista para el fundido
         first.src = videoSrc;
-        second.addEventListener('canplay', () => { first.loop = false; }, { once: true });
-        first.addEventListener('canplay', () => {
-          first.play().then(() => {
-            animate(first, { opacity: [0, 1] }, { duration: 0.8, ease: easeOut });
-          }).catch(() => {});
+        // Se pide reproducir enseguida: Safari en iPhone no descarga el video hasta que alguien llama a play()
+        first.play().catch(() => {});
+        first.addEventListener('playing', () => {
+          animate(first, { opacity: [0, 1] }, { duration: 0.8, ease: easeOut });
         }, { once: true });
-        // La segunda copia se carga cuando la primera ya está descargada, desde la caché
-        first.addEventListener('canplaythrough', () => {
+
+        // La segunda copia se prepara cuando la primera ya bajó (sale de la caché)
+        let secondReady = false;
+        const prepareSecond = () => {
+          if (secondReady) return;
+          secondReady = true;
           second.preload = 'auto';
           second.src = videoSrc;
-        }, { once: true });
+          second.addEventListener('canplay', () => { first.loop = false; }, { once: true });
+          // Arranque y pausa invisibles para que el iPhone la tenga lista para el fundido
+          second.play().then(() => { second.pause(); second.currentTime = 0; }).catch(() => {});
+        };
+        first.addEventListener('canplaythrough', prepareSecond, { once: true });
+        first.addEventListener('playing', () => setTimeout(prepareSecond, 3000), { once: true });
 
         const tick = () => {
           const a = heroVideos[current];
